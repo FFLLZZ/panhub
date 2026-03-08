@@ -24,7 +24,7 @@ export interface DoubanHotResult {
   categories: Record<string, DoubanHotCategory>;
 }
 
-const CACHE_TTL_MS = 60 * 60 * 1000; // 60 分钟
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 小时（豆瓣新片榜更新较慢）
 const cache = new MemoryCache<DoubanHotResult>({ maxSize: 10 });
 const UA =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1";
