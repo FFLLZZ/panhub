@@ -162,9 +162,13 @@ async function fetchCategoryData(categoryId: string, page: number, append = fals
 
 async function selectCategory(categoryId: string) {
   if (categoryId === selectedCategoryId.value && items.value.length > 0) return;
+
+  // 立即清空旧数据并显示加载状态
+  items.value = [];
   selectedCategoryId.value = categoryId;
   currentPage.value = 1;
   hasMore.value = true;
+
   await fetchCategoryData(categoryId, 1, false);
   await nextTick();
   setupLoadMoreObserver();

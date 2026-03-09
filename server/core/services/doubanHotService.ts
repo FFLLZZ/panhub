@@ -97,49 +97,67 @@ async function scrapeDoubanMovie(): Promise<DoubanHotItem[]> {
 }
 
 async function scrapeDoubanTop250(): Promise<DoubanHotItem[]> {
-  const url = "https://movie.douban.com/top250";
-  const html = await ofetch<string>(url, {
-    headers: { "user-agent": UA },
-    timeout: 10000,
-  });
-  const $ = load(html);
-  const items: DoubanHotItem[] = [];
+  const allItems: DoubanHotItem[] = [];
+  const totalPages = 10; // Top250 共10页，每页25个
 
-  $(".article ol.grid_view li").each((_, el) => {
-    const dom = $(el);
-    const href = dom.find(".pic a").attr("href") || "";
-    const id = getNumbers(href);
-    const rawTitle = dom.find(".info .title").first().text() || "";
-    const scoreDom = dom.find(".info .rating_num");
-    const score = scoreDom.length ? scoreDom.text() : "0.0";
-    const title = rawTitle ? `【${score}】${rawTitle}` : "";
-    if (!title) return;
+  for (let page = 0; page < totalPages; page++) {
+    const start = page * 25;
+    const url = start === 0
+      ? "https://movie.douban.com/top250"
+      : `https://movie.douban.com/top250?start=${start}`;
 
-    const img = dom.find("img");
-    const cover =
-      img.attr("data-src") ||
-      img.attr("data-original") ||
-      img.attr("src") ||
-      undefined;
+    try {
+      const html = await ofetch<string>(url, {
+        headers: { "user-agent": UA },
+        timeout: 10000,
+      });
+      const $ = load(html);
 
-    const coverUrl = cover
-      ? fixDoubanCoverUrl(cover.startsWith("//") ? "https:" + cover : cover)
-      : undefined;
+      $(".article ol.grid_view li").each((_, el) => {
+        const dom = $(el);
+        const href = dom.find(".pic a").attr("href") || "";
+        const id = getNumbers(href);
+        const rawTitle = dom.find(".info .title").first().text() || "";
+        const scoreDom = dom.find(".info .rating_num");
+        const score = scoreDom.length ? scoreDom.text() : "0.0";
+        const title = rawTitle ? `【${score}】${rawTitle}` : "";
+        if (!title) return;
 
-    const quote = dom.find(".info .inq").text().trim();
-    const info = dom.find(".info .bd p").first().text().trim();
+        const img = dom.find("img");
+        const cover =
+          img.attr("data-src") ||
+          img.attr("data-original") ||
+          img.attr("src") ||
+          undefined;
 
-    items.push({
-      id: id || undefined,
-      title,
-      cover: coverUrl,
-      desc: quote || info.split("/")[0].trim(),
-      hot: getNumbers(dom.find(".info .star span:last").text()),
-      url: href || `https://movie.douban.com/subject/${id}/`,
-    });
-  });
+        const coverUrl = cover
+          ? fixDoubanCoverUrl(cover.startsWith("//") ? "https:" + cover : cover)
+          : undefined;
 
-  return items;
+        const quote = dom.find(".info .inq").text().trim();
+        const info = dom.find(".info .bd p").first().text().trim();
+
+        allItems.push({
+          id: id || undefined,
+          title,
+          cover: coverUrl,
+          desc: quote || info.split("/")[0].trim(),
+          hot: getNumbers(dom.find(".info .star span:last").text()),
+          url: href || `https://movie.douban.com/subject/${id}/`,
+        });
+      });
+
+      // 短暂延迟避免请求过快
+      if (page < totalPages - 1) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    } catch (e) {
+      console.warn(`[DoubanTop250] 第 ${page + 1} 页抓取失败:`, (e as Error).message);
+      // 继续抓取下一页
+    }
+  }
+
+  return allItems;
 }
 
 /** 从电影详情页获取封面图片 */
