@@ -3,7 +3,7 @@
     <!-- 卡片头部 -->
     <div class="card-header">
       <div class="platform-badge" :style="{ background: color }">
-        <span class="platform-icon">{{ icon }}</span>
+        <span class="platform-icon" v-html="icon"></span>
       </div>
       <div class="header-info">
         <h3 class="platform-title">{{ title }}</h3>
